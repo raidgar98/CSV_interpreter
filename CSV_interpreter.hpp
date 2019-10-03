@@ -81,7 +81,14 @@ public:
 		if( ! __m_input.get_flag(1) )
 			THROW( std::bad_function_call, "file not open" );
 		
+		str line = get_line();
+		std::vector<str> args;
+		args.reserve(__m_headers.size());
 
+		for(int i = 0; i < __m_headers.size(); i++)
+			args.emplace_back(next_word(line));
+		
+		return std::shared_ptr<T>{ new T{ args } };
 	}
 
 	std::shared_ptr<T> operator()()
@@ -113,6 +120,7 @@ private: //methodes
 
 	str next_word(str& src, const bool initial_divide = false) const noexcept
 	{
+		if(src.length() == 0) return src;
 		size_t idx = 0;
 		str res{ "" };
 
@@ -190,7 +198,7 @@ private: //methodes
 	{
 		for( int i = 0; i < __m_buffer.size(); i++ )
 		{
-			if( __m_input.get_flag(2) ) //If quotes open
+			if( __m_input.get_flag(2) )	//If quotes open
 			{
 				if( ( var == '\''	&& __m_input.get_flag(3)	) ||
 					( var == '"'	&& ! __m_input.get_flag(3)	) )
@@ -208,14 +216,13 @@ private: //methodes
 				{
 					__m_input.set_flag(3, true);
 					__m_input.set_flag(2, true);
-					continue;
 				}
 				else if( var == '"')
 				{
 					__m_input.set_flag(3, false);
 					__m_input.set_flag(2, true);
-					continue;
 				}
+				continue;
 			}
 			
 			if(var != '\n' && var != '\r')
