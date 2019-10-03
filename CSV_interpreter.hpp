@@ -28,13 +28,16 @@ private:
 	std::list<chr> __m_buffer;	//list becauso of often adding and ereasing objects
 	std::vector<str> __m_headers;	//only once resized
 
+	const chr __m_delimiter;
+
 public:
 
 	CSV() = delete;
 	CSV(const CSV&) = delete;
 	CSV(CSV&&) = delete;
 
-	explicit CSV(const str& path_to_file) 
+	//i_delimiter - if NULL (default) delimiter will be autodetected from [ | ; : , ]
+	explicit CSV(const str& path_to_file, const chr i_delimiter = '\0') 
 	{
 		__m_input.set_flag(2, false);
 		__m_input.set_flag(3, false);
@@ -55,7 +58,7 @@ public:
 				while( result != str::npos )
 				{
 					__m_headers.emplace_back(result));
-					result = next_word( raw_header );
+					result = next_word( raw_header, i_delimiter != '\0');
 				}
 			}
 			
@@ -107,9 +110,21 @@ private: //methodes
 		}while( true && ! __m_input->eof() );
 	}
 
-	str next_word(str& src) const noexcept
+	str next_word(str& src, const bool initial_divide = false) const noexcept
 	{
+		size_t idx = 0;
+		if(src[idx] == '\n' || src[idx] == '\r')
+		{
+			chr tmp = *(src.begin());
+			src.erease(src.begin());
+			return tmp;
+		}
 
+		if(initial_divide)
+		{
+			const std::array<chr, 4> supported_delimiters[] = {"|", ":", ";", ","};
+
+		}
 	}
 
 	void get_from_buffor(str& ret) noexcept
