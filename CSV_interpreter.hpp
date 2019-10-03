@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <vector>
+#include <list>
 #include <map>
 #include <stdexcept>
 
@@ -18,13 +19,14 @@ class CSV final
 private:
 
 	using str = std::string<chr>;
+	constexpr size_t buff_size = 10;
 	
 	//1'st flag: is open
 	//2'nd flag: is buffer has quote open
-	//3'rd flag: is quotes are single ones or double ones
+	//3'rd flag: is quotes are single ones (true) or double ones (false)
 	sneaky_pointer<std::ifstream, 3> __m_input{ nullptr };
-	std::vector<chr> __m_buffer;
-	std::vector<str> __m_headers;
+	std::list<chr> __m_buffer;	//list becauso of often adding and ereasing objects
+	std::vector<str> __m_headers;	//only once resized
 
 public:
 
@@ -51,7 +53,10 @@ public:
 				str raw_header = get_line();
 				str result{ next_word(raw_header) };
 				while( result != str::npos )
+				{
 					__m_headers.emplace_back(result));
+					result = next_word( raw_header );
+				}
 			}
 			
 		}
@@ -83,42 +88,70 @@ public:
 	std::map<const str, str> next_line_map();
 	std::vector<str> next_line_vec();
 
-private: //methodes (not safe)
+private: //methodes
 
-	str get_line()
+	str get_line() noexcept
 	{
-		//TODO: implement recognize quotes 
 		str ret{ "" };
-		for( const chr& var : __m_buffer )
-			if( __m_input.get_flag(2) )
-			{
-				ret += var;
-				continue;
-			}
-			if(var == '\'' || var == '\"')
-			{
-
-			}
-			if(var != '\n' && var != '\r')
-				ret += var;
-			else
-				if(ret.length() == 0)
-					return str::npos;
-				else
-					return ret;
-		
-		constexpr size_t buff_size = 10;
 		std::unique_ptr<chr[]> buff{ new chr[ sizeof(chr) * buff_size ]};
-		bool endline_appear = false;
 		do
 		{
+			get_from_buffor(ret);
+			if(ret.find("\n") != -1 || ret.find("\r" != -1))
+				return ret;
+			
 			__m_buffer.read(buff.get(), buff_size);
 			for( int i = 0; i < buff_size; i++ )
-				if()
+				__m_buffer.push_back(buff[i]);
 
-		}while( ! endline_appear );
+		}while( true && ! __m_input->eof() );
 	}
 
-	str next_word(str& src) const;
+	str next_word(str& src) const noexcept
+	{
+
+	}
+
+	void get_from_buffor(str& ret) noexcept
+	{
+		for( int i = 0; i < __m_buffer.size(); i++ )
+		{
+			if( __m_input.get_flag(2) ) //If quotes open
+			{
+				if( ( var == '\''	&& __m_input.get_flag(3)	) ||
+					( var == '"'	&& ! __m_input.get_flag(3)	) )
+					__m_input.set_flag(2, false);
+				else 
+				{
+					ret += *(__m_buffer.begin());
+					__m_buffer.pop_front()
+				}
+				continue;
+			}
+			else	//If quotes close
+			{
+				if( var == '\'' )
+				{
+					__m_input.set_flag(3, true);
+					__m_input.set_flag(2, true);
+					continue;
+				}
+				else if( var == '"')
+				{
+					__m_input.set_flag(3, false);
+					__m_input.set_flag(2, true);
+					continue;
+				}
+			}
+			
+			if(var != '\n' && var != '\r')
+			{
+				ret += *(__m_buffer.begin());
+				__m_buffer.pop_front()
+			}
+			else
+				return;
+		}
+	}
 
 };
