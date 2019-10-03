@@ -4,6 +4,7 @@
 #include <vector>
 #include <list>
 #include <map>
+#include <functional>
 #include <stdexcept>
 
 #include <experimental/filesystem>
@@ -113,6 +114,8 @@ private: //methodes
 	str next_word(str& src, const bool initial_divide = false) const noexcept
 	{
 		size_t idx = 0;
+		str res{ "" };
+
 		if(src[idx] == '\n' || src[idx] == '\r')
 		{
 			chr tmp = *(src.begin());
@@ -120,11 +123,67 @@ private: //methodes
 			return tmp;
 		}
 
-		if(initial_divide)
+		const std::array<chr, 7> supported_delimiters = 
 		{
-			const std::array<chr, 4> supported_delimiters[] = {"|", ":", ";", ","};
+			static_cast<chr>('|'), 
+			static_cast<chr>(':'), 
+			static_cast<chr>(';'), 
+			static_cast<chr>(','), 
+			static_cast<chr>('\t'), 
+			static_cast<chr>('\n'), 
+			static_cast<chr>('\r') 
+		};
 
+		const auto check_delimiter = [&](const chr& c) { 
+			for(const auto& var : supported_delimiters)
+				if(var == c) return true;
+			return false;
+		};
+		bool quote_open = false;
+		bool single_quote = false;
+		auto it = src.begin();
+		for(; it != src.end(); it++)
+		{
+			if(*it == '\'')
+			{
+				if(quote_open)
+				{
+					if(single_quote)
+						quote_open = false;
+					else
+						res += *it;
+				}
+				else
+				{
+					quote_open = true;
+					single_quote = true;
+				}
+				continue;
+			}
+			else if(*it == '"')
+			{
+				if(quote_open)
+				{
+					if( !single_quote)
+						quote_open = false;
+					else
+						res += *it;
+				}
+				else
+				{
+					quote_open = true;
+					quote_open = false;
+				}
+				continue;
+			}
+			else if( (initial_divide ? false : *it == __m_delimiter) || check_delimiter(*it) )
+			{
+				if( !initial_divide ) __m_delimiter = *it;						
+				break;
+			}else res += *it;
 		}
+		src.erease(src.begin(), it);
+		return res;
 	}
 
 	void get_from_buffor(str& ret) noexcept
